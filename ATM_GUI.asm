@@ -146,7 +146,7 @@ textAmount BYTE "Amount (Rs.)",0
 textRecipient BYTE "Recipient account",0
 textNewPin BYTE "New PIN",0
 textWelcome BYTE "Welcome to ATM Management System",0
-textAdminHint BYTE "Admin PIN: 9876",0
+textAdminHint BYTE "Administrator login required.",0
 textLoginFirst BYTE "Please login first.",0
 textInvalid BYTE "Invalid input or operation failed.",0
 textWrongPIN BYTE "Incorrect PIN. Please try again.",0
@@ -321,7 +321,7 @@ CreateControls PROC
     invoke CreateWindowExA,WS_EX_CLIENTEDGE,ADDR szEdit,0,WS_CHILD or WS_VISIBLE or ES_MULTILINE or ES_AUTOVSCROLL or ES_READONLY or WS_VSCROLL,20,282,540,190,hMain,ID_OUTPUT,hInstance,0
     mov hOutput,eax
     invoke SendMessageA,hOutput,WM_SETFONT,hFont,TRUE
-    invoke SetWindowTextA,hOutput,ADDR textAdminHint
+    invoke SetWindowTextA,hOutput,ADDR textWelcome
     ret
 CreateControls ENDP
 
