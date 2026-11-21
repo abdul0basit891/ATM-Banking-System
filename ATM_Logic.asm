@@ -164,28 +164,36 @@ laBad:
     xor eax,eax
     ret
 laDefaults:
-    mov accountCount,5
-    mov accountData[0].accNo,10001
-    mov accountData[0].pinCode,1234
-    mov accountData[0].balance,50000
-    mov accountData[0].active,1
-    mov accountData[4*SIZEOF ACCOUNT].accNo,10002
-    mov accountData[4*SIZEOF ACCOUNT].pinCode,2222
-    mov accountData[4*SIZEOF ACCOUNT].balance,75000
-    mov accountData[4*SIZEOF ACCOUNT].active,1
-    mov accountData[8*SIZEOF ACCOUNT].accNo,10003
-    mov accountData[8*SIZEOF ACCOUNT].pinCode,3333
-    mov accountData[8*SIZEOF ACCOUNT].balance,100000
-    mov accountData[8*SIZEOF ACCOUNT].active,1
-    mov accountData[12*SIZEOF ACCOUNT].accNo,10004
-    mov accountData[12*SIZEOF ACCOUNT].pinCode,4444
-    mov accountData[12*SIZEOF ACCOUNT].balance,25000
-    mov accountData[12*SIZEOF ACCOUNT].active,1
-    mov accountData[16*SIZEOF ACCOUNT].accNo,10005
-    mov accountData[16*SIZEOF ACCOUNT].pinCode,5555
-    mov accountData[16*SIZEOF ACCOUNT].balance,90000
-    mov accountData[16*SIZEOF ACCOUNT].active,1
-    mov esi,0
+   
+mov accountCount,5
+
+mov accountData[0*SIZEOF ACCOUNT].accNo,10001
+mov accountData[0*SIZEOF ACCOUNT].pinCode,1234
+mov accountData[0*SIZEOF ACCOUNT].balance,50000
+mov accountData[0*SIZEOF ACCOUNT].active,1
+
+mov accountData[1*SIZEOF ACCOUNT].accNo,10002
+mov accountData[1*SIZEOF ACCOUNT].pinCode,2222
+mov accountData[1*SIZEOF ACCOUNT].balance,75000
+mov accountData[1*SIZEOF ACCOUNT].active,1
+
+mov accountData[2*SIZEOF ACCOUNT].accNo,10003
+mov accountData[2*SIZEOF ACCOUNT].pinCode,3333
+mov accountData[2*SIZEOF ACCOUNT].balance,100000
+mov accountData[2*SIZEOF ACCOUNT].active,1
+
+mov accountData[3*SIZEOF ACCOUNT].accNo,10004
+mov accountData[3*SIZEOF ACCOUNT].pinCode,4444
+mov accountData[3*SIZEOF ACCOUNT].balance,25000
+mov accountData[3*SIZEOF ACCOUNT].active,1
+
+mov accountData[4*SIZEOF ACCOUNT].accNo,10005
+mov accountData[4*SIZEOF ACCOUNT].pinCode,5555
+mov accountData[4*SIZEOF ACCOUNT].balance,90000
+mov accountData[4*SIZEOF ACCOUNT].active,1
+
+mov esi,0
+
 ldClear:
     cmp esi,accountCount
     jae ldSave
@@ -285,35 +293,56 @@ aiFail:
     ret
 ATM_Initialize ENDP
 
-; Returns account index in EAX, or -1. Three incorrect PIN attempts lock account.
+; Returns account index on success, -1 on login failure, and -2 if account is locked.
+; Three incorrect PIN attempts lock the account.
+
 ATM_Login PROC USES esi ebx accNo:DWORD,pinValue:DWORD
     invoke FindAccount,accNo
     cmp eax,-1
     je alFail
+
     mov esi,eax
     ACCOUNT_OFFSET esi
+
     cmp accountData[ebx].active,1
     jne alFail
+
     cmp accountData[ebx].locked,0
-    jne alFail
+    jne alLocked
+
     mov eax,accountData[ebx].pinCode
     cmp eax,pinValue
     jne alWrong
+
     mov accountData[ebx].failed,0
     call SaveAccounts
     mov eax,esi
     ret
+
 alWrong:
     inc accountData[ebx].failed
     cmp accountData[ebx].failed,3
-    jb alSave
-    mov accountData[ebx].locked,1
-alSave:
+    jae alLock
+
     call SaveAccounts
+    mov eax,-1
+    ret
+
+alLock:
+    mov accountData[ebx].locked,1
+    call SaveAccounts
+    mov eax,-2
+    ret
+
+alLocked:
+    mov eax,-2
+    ret
+
 alFail:
     mov eax,-1
     ret
 ATM_Login ENDP
+
 
 ATM_GetBalance PROC USES ebx idx:DWORD
     mov eax,idx

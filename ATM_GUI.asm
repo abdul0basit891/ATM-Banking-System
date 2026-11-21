@@ -149,7 +149,16 @@ textWelcome BYTE "Welcome to ATM Management System",0
 textAdminHint BYTE "Admin PIN: 9876",0
 textLoginFirst BYTE "Please login first.",0
 textInvalid BYTE "Invalid input or operation failed.",0
+textWrongPIN BYTE "Incorrect PIN. Please try again.",0
+textLocked BYTE "Account locked after 3 incorrect attempts. Contact administrator.",0
 textLoginOK BYTE "Login successful.",0
+textDepositOK BYTE "Deposit successful.",0
+textWithdrawOK BYTE "Withdrawal successful.",0
+textTransferOK BYTE "Transfer successful.",0
+textFreezeOK BYTE "Account frozen.",0
+textUnfreezeOK BYTE "Account unfrozen.",0
+textResetPinOK BYTE "PIN reset successful.",0
+textChangePinOK BYTE "PIN changed successfully.",0
 textAdminOK BYTE "Administrator mode enabled.",0
 textCreateOK BYTE "Account created. New account number: ",0
 textBalance BYTE "Available balance: Rs. ",0
@@ -321,17 +330,25 @@ HandleCommand PROC USES esi edi hWnd:DWORD,wParam:DWORD
     mov eax,wParam
     and eax,0FFFFh
     mov cmd,eax
-    .if eax == ID_LOGIN
-        invoke GetEditNumber,hAccount
-        mov accNo,eax
-        invoke GetEditNumber,hPin
-        invoke ATM_Login,accNo,eax
-        cmp eax,-1
-        je hcFail
-        mov currentIndex,eax
-        mov loggedIn,1
-        mov adminMode,0
-        invoke ShowMessage,ADDR textLoginOK
+    
+.if eax == ID_LOGIN
+    invoke GetEditNumber,hAccount
+    mov accNo,eax
+
+    invoke GetEditNumber,hPin
+    invoke ATM_Login,accNo,eax
+
+    cmp eax,-2
+    je hcLoginLocked
+
+    cmp eax,-1
+    je hcLoginWrong
+
+    mov currentIndex,eax
+    mov loggedIn,1
+    mov adminMode,0
+    invoke ShowMessage,ADDR textLoginOK
+
     .elseif eax == ID_ADMIN
         invoke GetEditNumber,hPin
         invoke ATM_AdminLogin,eax
@@ -358,7 +375,7 @@ HandleCommand PROC USES esi edi hWnd:DWORD,wParam:DWORD
         invoke ATM_Deposit,currentIndex,eax
         test eax,eax
         jz hcFail
-        invoke ShowMessage,ADDR textLoginOK
+        invoke ShowMessage,ADDR textDepositOK
     .elseif eax == ID_WITHDRAW
         cmp loggedIn,1
         jne hcNeedLogin
@@ -366,7 +383,7 @@ HandleCommand PROC USES esi edi hWnd:DWORD,wParam:DWORD
         invoke ATM_Withdraw,currentIndex,eax
         test eax,eax
         jz hcFail
-        invoke ShowMessage,ADDR textLoginOK
+        invoke ShowMessage,ADDR textWithdrawOK
     .elseif eax == ID_TRANSFER
         cmp loggedIn,1
         jne hcNeedLogin
@@ -376,7 +393,7 @@ HandleCommand PROC USES esi edi hWnd:DWORD,wParam:DWORD
         invoke ATM_Transfer,currentIndex,accNo,eax
         test eax,eax
         jz hcFail
-        invoke ShowMessage,ADDR textLoginOK
+        invoke ShowMessage,ADDR textTransferOK
     .elseif eax == ID_STATEMENT
         cmp loggedIn,1
         jne hcNeedLogin
@@ -402,7 +419,7 @@ HandleCommand PROC USES esi edi hWnd:DWORD,wParam:DWORD
         invoke ATM_SetAccountActive,eax,0
         test eax,eax
         jz hcFail
-        invoke ShowMessage,ADDR textLoginOK
+        invoke ShowMessage,ADDR textFreezeOK
     .elseif eax == ID_UNFREEZE
         cmp adminMode,1
         jne hcNeedAdmin
@@ -410,7 +427,7 @@ HandleCommand PROC USES esi edi hWnd:DWORD,wParam:DWORD
         invoke ATM_SetAccountActive,eax,1
         test eax,eax
         jz hcFail
-        invoke ShowMessage,ADDR textLoginOK
+        invoke ShowMessage,ADDR textUnfreezeOK
     .elseif eax == ID_LIST
         cmp adminMode,1
         jne hcNeedAdmin
@@ -457,7 +474,7 @@ HandleCommand PROC USES esi edi hWnd:DWORD,wParam:DWORD
         invoke ATM_AdminResetPIN,accNo,eax
         test eax,eax
         jz hcFail
-        invoke ShowMessage,ADDR textLoginOK
+        invoke ShowMessage,ADDR textResetPinOK
     .elseif eax == ID_CHANGEPIN
         cmp loggedIn,1
         jne hcNeedLogin
@@ -467,9 +484,17 @@ HandleCommand PROC USES esi edi hWnd:DWORD,wParam:DWORD
         invoke ATM_ChangePIN,currentIndex,val,eax
         test eax,eax
         jz hcFail
-        invoke ShowMessage,ADDR textLoginOK
+        invoke ShowMessage,ADDR textChangePinOK
     .endif
     ret
+hcLoginWrong:
+    invoke ShowMessage,ADDR textWrongPIN
+    ret
+
+hcLoginLocked:
+    invoke ShowMessage,ADDR textLocked
+    ret
+
 hcNeedLogin:
     invoke ShowMessage,ADDR textLoginFirst
     ret
